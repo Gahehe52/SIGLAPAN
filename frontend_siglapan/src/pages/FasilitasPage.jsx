@@ -1,99 +1,89 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Route } from 'lucide-react';
 
-export default function FasilitasPage() {
-  const [fasilitas, setFasilitas] = useState([]);
-  const [form, setForm] = useState(null);
+export default function JalanPage() {
+  const [jalan, setJalan] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchFasilitas = async () => {
+  const fetchJalan = async () => {
     try {
-      const res = await api.get('/fasilitas');
-      const formattedData = res.data.features ? res.data.features.map(f => ({
-        ...f.properties,
-        x_coord: f.geometry.coordinates[0],
-        y_coord: f.geometry.coordinates[1]
-      })) : [];
-      setFasilitas(formattedData);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  useEffect(() => { fetchFasilitas(); }, []);
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Hapus fasilitas ini?')) {
-      await api.delete(`/fasilitas/${id}`);
-      fetchFasilitas();
-    }
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { ...form, x_coord: parseFloat(form.x_coord), y_coord: parseFloat(form.y_coord) };
-      if (form.id_fasilitas) {
-        await api.put(`/fasilitas/${form.id_fasilitas}`, payload);
+      // Memanggil endpoint API jalan yang baru
+      const res = await api.get('/jalan');
+      
+      // Mengambil data dari dalam format properti GeoJSON
+      if (res.data && res.data.features) {
+        setJalan(res.data.features.map(f => f.properties));
       } else {
-        await api.post('/fasilitas', payload);
+        setJalan([]);
       }
-      setForm(null);
-      fetchFasilitas();
     } catch (error) {
-      alert("Terjadi kesalahan.");
+      console.error("Gagal memuat data jalan", error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchJalan();
+  }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-full">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-[#40513B]">Manajemen Fasilitas</h3>
-        <button 
-          onClick={() => setForm({ id_user: 1, nama_fasilitas: '', jenis_fasilitas: '', x_coord: '', y_coord: '' })}
-          className="bg-[#40513B] text-white px-4 py-2 rounded-lg hover:bg-[#628141] flex items-center gap-2"
-        >
-          <Plus size={18} /> Tambah Fasilitas
-        </button>
+        <h2 className="text-xl font-bold text-[#40513B] flex items-center gap-2">
+          <Route size={24} className="text-[#628141]" />
+          Data Jaringan Jalan Satelit
+        </h2>
       </div>
 
-      {form && (
-        <form onSubmit={handleSave} className="bg-[#F8FAF5] p-6 rounded-lg mb-6 border border-[#628141]/30 grid grid-cols-2 gap-4">
-          <input type="text" placeholder="Nama Fasilitas" className="border p-2 rounded col-span-2" value={form.nama_fasilitas} onChange={e => setForm({...form, nama_fasilitas: e.target.value})} required />
-          <input type="text" placeholder="Jenis Fasilitas (Gudang/Irigasi/dll)" className="border p-2 rounded col-span-2" value={form.jenis_fasilitas} onChange={e => setForm({...form, jenis_fasilitas: e.target.value})} required />
-          <input type="number" step="any" placeholder="Koordinat X (Easting)" className="border p-2 rounded" value={form.x_coord} onChange={e => setForm({...form, x_coord: e.target.value})} required />
-          <input type="number" step="any" placeholder="Koordinat Y (Northing)" className="border p-2 rounded" value={form.y_coord} onChange={e => setForm({...form, y_coord: e.target.value})} required />
-          <div className="col-span-2 flex justify-end gap-2 mt-2">
-            <button type="button" onClick={() => setForm(null)} className="px-4 py-2 border rounded text-gray-600">Batal</button>
-            <button type="submit" className="bg-[#40513B] text-white px-4 py-2 rounded">Simpan Data</button>
-          </div>
-        </form>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-[#40513B] text-white">
-              <th className="p-3 rounded-tl-lg">ID</th>
-              <th className="p-3">Nama Fasilitas</th>
-              <th className="p-3">Jenis</th>
-              <th className="p-3 text-center rounded-tr-lg">Aksi</th>
+      <div className="overflow-auto flex-1 border border-gray-200 rounded-lg">
+        <table className="w-full text-left border-collapse min-w-[600px]">
+          <thead className="bg-[#F8FAF5] sticky top-0 shadow-sm">
+            <tr className="text-[#40513B]">
+              <th className="py-3 px-4 font-semibold w-24">ID Jalan</th>
+              <th className="py-3 px-4 font-semibold">Nama Jalan</th>
+              <th className="py-3 px-4 font-semibold w-48">Kategori (Highway)</th>
             </tr>
           </thead>
           <tbody>
-            {fasilitas.map((item) => (
-              <tr key={item.id_fasilitas} className="border-b hover:bg-gray-50">
-                <td className="p-3">{item.id_fasilitas}</td>
-                <td className="p-3">{item.nama_fasilitas}</td>
-                <td className="p-3">{item.jenis_fasilitas}</td>
-                <td className="p-3 flex justify-center gap-3">
-                  <button onClick={() => setForm({...item, id_user: 1})} className="text-[#EAB308] hover:text-[#40513B]"><Edit size={18}/></button>
-                  <button onClick={() => handleDelete(item.id_fasilitas)} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+            {loading ? (
+              <tr>
+                <td colSpan="3" className="py-8 text-center text-gray-500 font-medium animate-pulse">
+                  Membaca data spasial jalan dari database...
                 </td>
               </tr>
-            ))}
+            ) : jalan.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="py-8 text-center text-gray-500">
+                  Tidak ada data jaringan jalan yang ditemukan.
+                </td>
+              </tr>
+            ) : (
+              jalan.map((item, index) => (
+                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                  <td className="py-3 px-4 text-gray-600 font-mono text-sm">#{item.id_jalan}</td>
+                  <td className="py-3 px-4 font-medium text-gray-800">{item.nama_jalan || 'Jalan Tanpa Nama'}</td>
+                  <td className="py-3 px-4">
+                    <span className="bg-orange-100 text-[#D35400] text-xs px-3 py-1 rounded-full font-bold capitalize border border-orange-200">
+                      {item.tipe_jalan}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
+      </div>
+      
+      {/* Kotak Informasi Tambahan */}
+      <div className="mt-4 p-4 bg-blue-50 text-blue-800 text-sm rounded-lg border border-blue-100 flex gap-3 items-start">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+        <p>
+          <strong>Informasi Geospasial:</strong> Data jaringan jalan ini disinkronisasi secara otomatis melalui API Satelit OpenStreetMap berdasarkan <i>Bounding Box</i> (batas koordinat wilayah) seluruh lahan Anda. Karena bentuk geometri setiap jalan adalah garis kompleks (<i>LineString</i>) yang saling terhubung, fitur penambahan atau pengubahan data secara manual dinonaktifkan pada halaman ini demi menjaga integritas topologi peta.
+        </p>
       </div>
     </div>
   );
