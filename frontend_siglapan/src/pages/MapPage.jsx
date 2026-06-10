@@ -5,7 +5,7 @@ import { Search, Filter } from 'lucide-react';
 
 export default function MapPage() {
   const [dataLahan, setDataLahan] = useState(null);
-  const [dataFasilitas, setDataFasilitas] = useState(null);
+  const [dataJalan, setDataJalan] = useState(null);
   const [filterPemilik, setFilterPemilik] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -18,10 +18,11 @@ export default function MapPage() {
       const resLahan = await api.get(urlLahan);
       setDataLahan(resLahan.data);
 
-      const resFasilitas = await api.get('/fasilitas');
-      setDataFasilitas(resFasilitas.data);
+      // Mengubah request data fasilitas lama menjadi jalan raya dari database Neon
+      const resJalan = await api.get('/jalan');
+      setDataJalan(resJalan.data);
     } catch (error) {
-      console.error("Gagal memuat data", error);
+      console.error("Gagal memuat data spasial dari server database cloud:", error);
     } finally {
       setLoading(false);
     }
@@ -32,10 +33,9 @@ export default function MapPage() {
   }, []);
 
   return (
-    /* h-full dipadukan dengan overflow-hidden agar scrollbar bocor menghilang */
     <div className="flex flex-col h-full gap-4 overflow-hidden">
       
-      {/* Kotak Filter (flex-shrink-0 agar tingginya tidak menyusut) */}
+      {/* Panel Pencarian dan Filter */}
       <div className="flex-shrink-0 bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-4 items-center">
         <Filter className="text-gray-400" />
         <input 
@@ -54,16 +54,14 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* Wadah Peta Utama */}
-      {/* flex-1 dan min-h-0 sangat krusial di flexbox untuk mencegah overflow */}
+      {/* Wadah Frame Peta Leaflet */}
       <div className="flex-1 min-h-0 bg-gray-100 rounded-xl relative shadow-md overflow-hidden border border-gray-300">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000]">
-            <span className="font-bold text-[#40513B] animate-pulse">Memuat Data Spasial...</span>
+            <span className="font-bold text-[#40513B] animate-pulse">Sinkronisasi Peta dan Jaringan Jalan Satelit...</span>
           </div>
         )}
-        {/* Komponen MapGIS dipanggil di sini */}
-        <MapGIS dataLahan={dataLahan} dataFasilitas={dataFasilitas} />
+        <MapGIS dataLahan={dataLahan} dataJalan={dataJalan} />
       </div>
 
     </div>

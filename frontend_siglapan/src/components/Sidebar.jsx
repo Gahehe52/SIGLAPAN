@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map as MapIcon, LayoutDashboard, MapPin, Database, Sprout, Radar } from 'lucide-react';
+import { Map as MapIcon, LayoutDashboard, Route, Database, Sprout, Radar } from 'lucide-react';
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
@@ -8,7 +8,7 @@ export default function Sidebar({ activePage, setActivePage }) {
     { id: 'spasial', label: 'Analisis Spasial', icon: <Radar size={20} /> },
     { id: 'lahan', label: 'Kelola Data Lahan', icon: <Database size={20} /> },
     { id: 'tanaman', label: 'Kelola Tanaman', icon: <Sprout size={20} /> },
-    { id: 'fasilitas', label: 'Kelola Fasilitas', icon: <MapPin size={20} /> },
+    { id: 'jalan', label: 'Kelola Data Jalan', icon: <Route size={20} /> }, // Mengubah fasilitas menjadi icon dan menu jalan
   ];
 
   return (
