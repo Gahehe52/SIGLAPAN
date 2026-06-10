@@ -1,12 +1,14 @@
 import React from 'react';
-import { Map as MapIcon, LayoutDashboard, MapPin, Database } from 'lucide-react';
+import { Map as MapIcon, LayoutDashboard, MapPin, Database, Sprout, Radar } from 'lucide-react';
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Statistik', icon: <LayoutDashboard size={20} /> },
     { id: 'peta', label: 'Peta & Analisis', icon: <MapIcon size={20} /> },
+    { id: 'spasial', label: 'Analisis Spasial', icon: <Radar size={20} /> },
     { id: 'lahan', label: 'Kelola Data Lahan', icon: <Database size={20} /> },
-    { id: 'fasilitas', label: 'Kelola Fasilitas', icon: <MapPin size={20} /> }
+    { id: 'tanaman', label: 'Kelola Tanaman', icon: <Sprout size={20} /> },
+    { id: 'fasilitas', label: 'Kelola Fasilitas', icon: <MapPin size={20} /> },
   ];
 
   return (
@@ -20,15 +22,15 @@ export default function Sidebar({ activePage, setActivePage }) {
           <p className="text-xs text-gray-300">Sistem Lahan Pertanian</p>
         </div>
       </div>
-      
+
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => (
-          <button 
+          <button
             key={item.id}
             onClick={() => setActivePage(item.id)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              activePage === item.id 
-                ? 'bg-[#628141] text-white shadow-md' 
+              activePage === item.id
+                ? 'bg-[#628141] text-white shadow-md'
                 : 'text-gray-300 hover:bg-[#628141]/50 hover:text-white'
             }`}
           >
