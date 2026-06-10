@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import semua router yang sudah dipisah
-from routers import tanaman, lahan, fasilitas, spasial, statistik
+# Import semua router yang sudah diperbarui
+from routers import tanaman, lahan, jalan, spasial, statistik
 
 app = FastAPI(
     title="SIGLAPAN API", 
@@ -22,6 +22,6 @@ app.add_middleware(
 # Mendaftarkan router ke aplikasi utama
 app.include_router(tanaman.router)
 app.include_router(lahan.router)
-app.include_router(fasilitas.router)
+app.include_router(jalan.router) # Menggunakan router jalan
 app.include_router(spasial.router)
 app.include_router(statistik.router)
