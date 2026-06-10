@@ -26,7 +26,7 @@ def cek_lokasi_lahan_geojson(x: float = Query(...), y: float = Query(...)):
             ) AS geojson
             FROM lahan l
             JOIN tanaman tn ON l.id_tanaman = tn.id_tanaman
-            WHERE ST_Intersects(l.geom, ST_SetSRID(ST_MakePoint(%s, %s), 32748));
+            WHERE ST_Intersects(l.geom, ST_Transform(ST_SetSRID(ST_MakePoint(%s, %s), 4326), 32748));
         """
         cur.execute(query, (x, y))
         result = cur.fetchone()

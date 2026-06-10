@@ -39,7 +39,7 @@ export default function MapGIS({ dataLahan, dataFasilitas }) {
     /* Menggunakan absolute inset-0 agar peta benar-benar mengisi pojok ke pojok wadahnya */
     <div className="absolute inset-0 z-0">
       <MapContainer 
-        center={[-5.3821, 105.2574]} 
+        center={[-6.3616, 106.6079]}
         zoom={12} 
         /* INI ADALAH KUNCI PERBAIKANNYA */
         style={{ height: "100%", width: "100%" }}

@@ -5,6 +5,8 @@ import DashboardPage from './pages/DashboardPage';
 import MapPage from './pages/MapPage';
 import LahanPage from './pages/LahanPage';
 import FasilitasPage from './pages/FasilitasPage';
+import TanamanPage from './pages/TanamanPage';
+import SpasialPage from './pages/SpasialPage';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -13,7 +15,9 @@ export default function App() {
     switch (activePage) {
       case 'dashboard': return <DashboardPage />;
       case 'peta': return <MapPage />;
+      case 'spasial': return <SpasialPage />;
       case 'lahan': return <LahanPage />;
+      case 'tanaman': return <TanamanPage />;
       case 'fasilitas': return <FasilitasPage />;
       default: return <DashboardPage />;
     }
@@ -23,7 +27,9 @@ export default function App() {
     switch (activePage) {
       case 'dashboard': return 'Dashboard Statistik';
       case 'peta': return 'Peta & Filter Geospasial';
+      case 'spasial': return 'Analisis Spasial';
       case 'lahan': return 'Manajemen Data Lahan';
+      case 'tanaman': return 'Manajemen Jenis Tanaman';
       case 'fasilitas': return 'Manajemen Data Fasilitas';
       default: return 'SIGLAPAN';
     }
