@@ -14,13 +14,14 @@ def get_lahan_geojson(
     conn = get_db_connection()
     cur = conn.cursor()
     try:
+        # PENTING: ST_Transform(..., 4326) ditambahkan agar Leaflet bisa membaca koordinat GPS
         query = """
             SELECT json_build_object(
                 'type', 'FeatureCollection',
                 'features', COALESCE(json_agg(
                     json_build_object(
                         'type', 'Feature',
-                        'geometry', ST_AsGeoJSON(ST_Simplify(t.geom, 2))::json,
+                        'geometry', ST_AsGeoJSON(ST_Transform(ST_Simplify(t.geom, 2), 4326))::json,
                         'properties', json_build_object(
                             'id_lahan', t.id_lahan,
                             'nama_pemilik', t.nama_pemilik,

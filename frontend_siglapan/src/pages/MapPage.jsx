@@ -18,11 +18,11 @@ export default function MapPage() {
       const resLahan = await api.get(urlLahan);
       setDataLahan(resLahan.data);
 
-      // Mengubah request data fasilitas lama menjadi jalan raya dari database Neon
+      // Memanggil data rute jalan raya yang sudah ditransformasi dari database Neon Cloud
       const resJalan = await api.get('/jalan');
       setDataJalan(resJalan.data);
     } catch (error) {
-      console.error("Gagal memuat data spasial dari server database cloud:", error);
+      print("Gagal memuat data spasial dari server database cloud:", error);
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ export default function MapPage() {
   return (
     <div className="flex flex-col h-full gap-4 overflow-hidden">
       
-      {/* Panel Pencarian dan Filter */}
+      {/* Panel Pencarian */}
       <div className="flex-shrink-0 bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-4 items-center">
         <Filter className="text-gray-400" />
         <input 
@@ -54,7 +54,7 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* Wadah Frame Peta Leaflet */}
+      {/* Wadah Utama Peta */}
       <div className="flex-1 min-h-0 bg-gray-100 rounded-xl relative shadow-md overflow-hidden border border-gray-300">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000]">

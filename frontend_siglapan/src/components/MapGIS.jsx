@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Komponen internal untuk mendeteksi koordinat objek secara dinamis dan memfokuskan kamera peta
+// Komponen otomatis untuk memfokuskan kamera ke area lahan begitu data selesai diunduh
 function FitBounds({ dataLahan }) {
   const map = useMap();
 
@@ -13,10 +13,10 @@ function FitBounds({ dataLahan }) {
         const layer = L.geoJSON(dataLahan);
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [20, 20] });
+          map.fitBounds(bounds, { padding: [30, 30] });
         }
       } catch (error) {
-        console.error("Gagal menyesuaikan fokus cakupan peta:", error);
+        print("Gagal memposisikan cakupan peta otomatis:", error);
       }
     }
   }, [dataLahan, map]);
@@ -25,7 +25,7 @@ function FitBounds({ dataLahan }) {
 }
 
 export default function MapGIS({ dataLahan, dataJalan }) {
-  // Desain poligon lahan pertanian
+  // Desain dasar poligon lahan pertanian sesuai palet hijau kustom
   const gayaPoligon = () => ({
     fillColor: '#628141',
     weight: 2,
@@ -34,50 +34,64 @@ export default function MapGIS({ dataLahan, dataJalan }) {
     fillOpacity: 0.5
   });
 
-  // Desain garis jaringan jalan satelit
+  // Desain rute jalan raya satelit berwarna terracotta kontras tinggi agar sangat terlihat jelas
   const gayaJalan = (feature) => {
     const tipe = feature.properties?.tipe_jalan || 'Jalan Lokal';
-    // Jalan besar/utama dibuat sedikit lebih tebal dibandingkan jalan lingkungan
-    const tebal = (tipe === 'motorway' || tipe === 'trunk' || tipe === 'primary' || tipe === 'secondary') ? 3 : 1.5;
+    const apakahJalanUtama = ['motorway', 'trunk', 'primary', 'secondary'].includes(tipe);
     return {
-      color: '#B2533E', // Menggunakan warna terracotta kontras agar terlihat jelas di atas lahan hijau
-      weight: tebal,
-      opacity: 0.8
+      color: '#D35400', // Warna Terracotta tegas
+      weight: apakahJalanUtama ? 4 : 2, // Jalan raya utama dibuat lebih tebal
+      opacity: 0.9
     };
   };
 
   const onEachLahan = (feature, layer) => {
     if (feature.properties) {
-      layer.bindPopup(`
-        <div class="p-2 min-w-[200px]">
-          <h3 class="font-bold text-[#40513B] border-b border-gray-200 pb-2 mb-2 text-lg">${feature.properties.nama_lahan || 'Tanpa Nama Lahan'}</h3>
-          <table class="w-full text-sm">
-            <tr><td class="py-1 text-gray-500">Pemilik</td><td class="font-semibold text-right">${feature.properties.nama_pemilik || '-'}</td></tr>
-            <tr><td class="py-1 text-gray-500">Tanaman</td><td class="font-semibold text-right">${feature.properties.nama_tanaman || '-'}</td></tr>
-            <tr><td class="py-1 text-gray-500">Luas</td><td class="font-semibold text-right text-[#628141]">${feature.properties.luas_lahan ? parseFloat(feature.properties.luas_lahan).toLocaleString('id-ID') : 0} m&sup2;</td></tr>
+      // Menggunakan bindTooltip agar informasi langsung muncul saat mouse menyentuh area poligon (Hover)
+      layer.bindTooltip(`
+        <div class="p-2 font-sans">
+          <h3 class="font-bold text-[#40513B] border-b border-gray-200 pb-1 mb-1 text-sm">${feature.properties.nama_lahan || 'Lahan Pertanian'}</h3>
+          <table class="w-full text-xs gap-x-2">
+            <tr><td class="text-gray-500 py-0.5">Pemilik:</td><td class="font-semibold text-right pl-2">${feature.properties.nama_pemilik || '-'}</td></tr>
+            <tr><td class="text-gray-500 py-0.5">Tanaman:</td><td class="font-semibold text-right pl-2">${feature.properties.nama_tanaman || '-'}</td></tr>
+            <tr><td class="text-gray-500 py-0.5">Luas Lahan:</td><td class="font-bold text-[#628141] text-right pl-2">${feature.properties.luas_lahan ? parseFloat(feature.properties.luas_lahan).toLocaleString('id-ID') : 0} m²</td></tr>
           </table>
         </div>
-      `);
+      `, { sticky: true, direction: 'auto', opacity: 0.95 });
+
+      // Efek interaktif: Poligon menyala lebih terang saat dilewati kursor mouse
+      layer.on({
+        mouseover: (e) => {
+          const targetLayer = e.target;
+          targetLayer.setStyle({
+            fillOpacity: 0.8,
+            weight: 3,
+            color: '#2C3E50'
+          });
+        },
+        mouseout: (e) => {
+          const targetLayer = e.target;
+          targetLayer.setStyle(gayaPoligon());
+        }
+      });
     }
   };
 
   const onEachJalan = (feature, layer) => {
     if (feature.properties) {
-      layer.bindPopup(`
-        <div class="p-1 min-w-[150px]">
-          <h4 class="font-bold text-[#40513B] text-base">${feature.properties.nama_jalan || 'Jalan Tanpa Nama'}</h4>
-          <p class="text-xs text-gray-600 font-medium bg-gray-100 inline-block px-2 py-1 rounded mt-1">
-            ${feature.properties.tipe_jalan || 'Jalan Lokal'}
-          </p>
+      layer.bindTooltip(`
+        <div class="p-1 font-sans text-xs">
+          <p class="font-bold text-[#40513B]">${feature.properties.nama_jalan || 'Jalan Tanpa Nama'}</p>
+          <p class="text-[10px] text-gray-500 capitalize bg-gray-100 px-1 py-0.5 rounded mt-0.5 inline-block">${feature.properties.tipe_jalan || 'Jalan Lokal'}</p>
         </div>
-      `);
+      `, { sticky: true });
     }
   };
 
   return (
     <div className="absolute inset-0 z-0">
       <MapContainer 
-        center={[-6.2088, 106.8456]} 
+        center={[-6.1866, 106.5321]} // Dikunci langsung pada titik pusat koordinat nyata lahan Anda
         zoom={11} 
         style={{ height: "100%", width: "100%" }}
       >
@@ -86,7 +100,7 @@ export default function MapGIS({ dataLahan, dataJalan }) {
           attribution='&copy; OpenStreetMap contributors'
         />
         
-        {/* Render Poligon Lahan Pertanian */}
+        {/* Render Layer Poligon Lahan */}
         {dataLahan && dataLahan.features && (
           <GeoJSON 
             key={`lahan-${dataLahan.features.length}`}
@@ -96,7 +110,7 @@ export default function MapGIS({ dataLahan, dataJalan }) {
           />
         )}
 
-        {/* Render Jalur Garis Jalan Nyata dari Satelit */}
+        {/* Render Layer Garis Rute Jalan Satelit */}
         {dataJalan && dataJalan.features && (
           <GeoJSON 
             key={`jalan-${dataJalan.features.length}`}
@@ -106,7 +120,7 @@ export default function MapGIS({ dataLahan, dataJalan }) {
           />
         )}
 
-        {/* Pemicu penyesuaian kamera otomatis */}
+        {/* Eksekusi penyesuaian posisi kamera otomatis */}
         <FitBounds dataLahan={dataLahan} />
       </MapContainer>
     </div>
