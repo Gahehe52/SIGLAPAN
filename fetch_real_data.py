@@ -61,23 +61,25 @@ def tarik_data_nyata():
 
         # 3. MENGUNDUH JALAN SUNGGUHAN DARI OPENSTREETMAP API
         print("\n3. Mengunduh data jalan sungguhan dari satelit peta di koordinat tersebut...")
-        # Menggunakan HTTPS untuk koneksi yang diizinkan
+        print("   -> Menghubungi server Overpass API (Membatasi hanya pada jalan raya utama)...")
+        
         overpass_url = "https://overpass-api.de/api/interpreter"
         
+        # Optimasi: HANYA ambil jalan utama (primary, secondary, tertiary, dll) untuk area yang sangat luas
         overpass_query = f"""
-        [out:json][timeout:180];
-        way["highway"~"motorway|trunk|primary|secondary|tertiary|unclassified|residential|service"]({lat_min},{lon_min},{lat_max},{lon_max});
+        [out:json][timeout:50];
+        way["highway"~"motorway|trunk|primary|secondary|tertiary"]({lat_min},{lon_min},{lat_max},{lon_max});
         out geom;
         """
 
-        # Menambahkan Headers untuk menghindari pemblokiran (Error 406 Not Acceptable)
         headers = {
             'User-Agent': 'SIGLAPAN-ITERA-Project/1.0 (Student Project)',
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        response = requests.post(overpass_url, data={'data': overpass_query}, headers=headers)
+        # Menggunakan timeout=60 di sisi Python agar tidak menggantung tanpa akhir
+        response = requests.post(overpass_url, data={'data': overpass_query}, headers=headers, timeout=60)
         
         if response.status_code != 200:
             print(f"Gagal mengakses API Satelit (HTTP {response.status_code}).")
@@ -88,7 +90,7 @@ def tarik_data_nyata():
         try:
             osm_data = response.json()
         except ValueError:
-            print("Gagal mengurai respons menjadi JSON.")
+            print("Gagal mengurai respons menjadi JSON. Server mungkin sedang sibuk.")
             return
 
         elements = osm_data.get('elements', [])
@@ -131,9 +133,12 @@ def tarik_data_nyata():
         conn.commit()
         print(f"   -> SUKSES! {berhasil} ruas jalan raya asli dari satelit berhasil dimasukkan ke database Anda.")
 
+    except requests.exceptions.Timeout:
+        print("\nTerjadi Kesalahan: Koneksi Timeout (Lebih dari 60 detik)!")
+        print("Server satelit sedang sibuk atau data terlalu besar. Silakan coba jalankan ulang skrip ini.")
     except Exception as e:
         conn.rollback()
-        print("Terjadi Kesalahan internal:", e)
+        print("\nTerjadi Kesalahan internal:", e)
     finally:
         cur.close()
         conn.close()

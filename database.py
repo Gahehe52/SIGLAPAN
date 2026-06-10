@@ -1,20 +1,13 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Sesuaikan kredensial dengan database PostgreSQL Anda
-DB_HOST = "localhost"
-DB_NAME = "siglapan"
-DB_USER = "postgres"
-DB_PASS = "Ghama123!!!" # UBAH DENGAN PASSWORD PGADMIN ANDA
-DB_PORT = "5433"
+# Masukkan Connection String dari Neon.tech di bawah ini
+DB_URL = "postgresql://neondb_owner:npg_ktqXBZI6WUC5@ep-winter-tree-aoskx5vh-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS,
-        port=DB_PORT,
-        cursor_factory=RealDictCursor
-    )
-    return conn
+    try:
+        conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+        return conn
+    except Exception as e:
+        print(f"Error connecting to the database: {e}")
+        raise e
