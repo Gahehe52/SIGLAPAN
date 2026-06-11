@@ -16,7 +16,7 @@ function FitBounds({ dataLahan }) {
           map.fitBounds(bounds, { padding: [30, 30] });
         }
       } catch (error) {
-        print("Gagal memposisikan cakupan peta otomatis:", error);
+        console.error("Gagal memposisikan cakupan peta otomatis:", error);
       }
     }
   }, [dataLahan, map]);
@@ -24,7 +24,7 @@ function FitBounds({ dataLahan }) {
   return null;
 }
 
-export default function MapGIS({ dataLahan, dataJalan }) {
+export default function MapGIS({ dataLahan }) {
   // Desain dasar poligon lahan pertanian sesuai palet hijau kustom
   const gayaPoligon = () => ({
     fillColor: '#628141',
@@ -34,20 +34,9 @@ export default function MapGIS({ dataLahan, dataJalan }) {
     fillOpacity: 0.5
   });
 
-  // Desain rute jalan raya satelit berwarna terracotta kontras tinggi agar sangat terlihat jelas
-  const gayaJalan = (feature) => {
-    const tipe = feature.properties?.tipe_jalan || 'Jalan Lokal';
-    const apakahJalanUtama = ['motorway', 'trunk', 'primary', 'secondary'].includes(tipe);
-    return {
-      color: '#D35400', // Warna Terracotta tegas
-      weight: apakahJalanUtama ? 4 : 2, // Jalan raya utama dibuat lebih tebal
-      opacity: 0.9
-    };
-  };
-
   const onEachLahan = (feature, layer) => {
     if (feature.properties) {
-      // Menggunakan bindTooltip agar informasi langsung muncul saat mouse menyentuh area poligon (Hover)
+      // Menggunakan bindTooltip agar informasi langsung muncul saat mouse menyentuh area poligon
       layer.bindTooltip(`
         <div class="p-2 font-sans">
           <h3 class="font-bold text-[#40513B] border-b border-gray-200 pb-1 mb-1 text-sm">${feature.properties.nama_lahan || 'Lahan Pertanian'}</h3>
@@ -77,21 +66,10 @@ export default function MapGIS({ dataLahan, dataJalan }) {
     }
   };
 
-  const onEachJalan = (feature, layer) => {
-    if (feature.properties) {
-      layer.bindTooltip(`
-        <div class="p-1 font-sans text-xs">
-          <p class="font-bold text-[#40513B]">${feature.properties.nama_jalan || 'Jalan Tanpa Nama'}</p>
-          <p class="text-[10px] text-gray-500 capitalize bg-gray-100 px-1 py-0.5 rounded mt-0.5 inline-block">${feature.properties.tipe_jalan || 'Jalan Lokal'}</p>
-        </div>
-      `, { sticky: true });
-    }
-  };
-
   return (
     <div className="absolute inset-0 z-0">
       <MapContainer 
-        center={[-6.1866, 106.5321]} // Dikunci langsung pada titik pusat koordinat nyata lahan Anda
+        center={[-6.1866, 106.5321]}
         zoom={11} 
         style={{ height: "100%", width: "100%" }}
       >
@@ -100,23 +78,13 @@ export default function MapGIS({ dataLahan, dataJalan }) {
           attribution='&copy; OpenStreetMap contributors'
         />
         
-        {/* Render Layer Poligon Lahan */}
+        {/* Render Layer Poligon Lahan Saja */}
         {dataLahan && dataLahan.features && (
           <GeoJSON 
             key={`lahan-${dataLahan.features.length}`}
             data={dataLahan} 
             style={gayaPoligon} 
             onEachFeature={onEachLahan} 
-          />
-        )}
-
-        {/* Render Layer Garis Rute Jalan Satelit */}
-        {dataJalan && dataJalan.features && (
-          <GeoJSON 
-            key={`jalan-${dataJalan.features.length}`}
-            data={dataJalan}
-            style={gayaJalan}
-            onEachFeature={onEachJalan}
           />
         )}
 

@@ -5,7 +5,6 @@ import { Search, Filter, Leaf } from 'lucide-react';
 
 export default function MapPage() {
   const [dataLahan, setDataLahan] = useState(null);
-  const [dataJalan, setDataJalan] = useState(null);
   const [daftarTanaman, setDaftarTanaman] = useState([]);
   
   // State untuk filter
@@ -35,9 +34,6 @@ export default function MapPage() {
       const urlLahan = `/lahan?${params.toString()}`;
       const resLahan = await api.get(urlLahan);
       setDataLahan(resLahan.data);
-
-      const resJalan = await api.get('/jalan');
-      setDataJalan(resJalan.data);
     } catch (error) {
       console.error("Gagal memuat data spasial dari server database cloud:", error);
     } finally {
@@ -99,10 +95,10 @@ export default function MapPage() {
       <div className="flex-1 min-h-0 bg-gray-100 rounded-xl relative shadow-md overflow-hidden border border-gray-300">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000] backdrop-blur-sm">
-            <span className="font-bold text-[#40513B] animate-pulse drop-shadow-md">Sinkronisasi Layer Peta dan Geometri Lahan...</span>
+            <span className="font-bold text-[#40513B] animate-pulse drop-shadow-md">Sinkronisasi Geometri Lahan...</span>
           </div>
         )}
-        <MapGIS dataLahan={dataLahan} dataJalan={dataJalan} />
+        <MapGIS dataLahan={dataLahan} />
       </div>
 
     </div>
