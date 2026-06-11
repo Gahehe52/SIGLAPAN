@@ -8,7 +8,6 @@ def cek_lokasi_lahan_geojson(x: float = Query(...), y: float = Query(...)):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # PERBAIKAN: Menambahkan ST_Transform pada l.geom agar koordinat yang dikembalikan berupa GPS 4326 (Bukan UTM)
         query = """
             SELECT json_build_object(
                 'type', 'FeatureCollection',
@@ -38,51 +37,64 @@ def cek_lokasi_lahan_geojson(x: float = Query(...), y: float = Query(...)):
         cur.close()
         conn.close()
 
-@router.get("/rute-antar-lahan", summary="ST_Buffer & ST_Intersects: Jaringan jalan penghubung dua lahan")
+@router.get("/rute-antar-lahan", summary="pgRouting: Shortest Path Dijkstra antar lahan")
 def cari_rute_antar_lahan_geojson(
     id_lahan_awal: int = Query(...), 
-    id_lahan_tujuan: int = Query(...), 
-    radius_buffer: float = Query(500.0)
+    id_lahan_tujuan: int = Query(...)
 ):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # Analisis Spasial:
-        # 1. Mencari Centroid masing-masing lahan
-        # 2. Membuat garis (ST_MakeLine) penghubung kedua centroid
-        # 3. Membuat area koridor (ST_Buffer) sepanjang garis dalam satuan meter (UTM 32748)
-        # 4. Mengambil semua segmen jalan yang masuk dalam koridor tersebut dan ditransformasikan ke GPS 4326
+        # Perbaikan Ekstrem: Hanya memproses jalan yang valid (IS NOT NULL) dan cost positif
         query = """
+            WITH start_node AS (
+                SELECT id FROM jalan_vertices_pgr
+                ORDER BY the_geom <-> (SELECT ST_Centroid(geom) FROM lahan WHERE id_lahan = %s LIMIT 1)
+                LIMIT 1
+            ),
+            end_node AS (
+                SELECT id FROM jalan_vertices_pgr
+                ORDER BY the_geom <-> (SELECT ST_Centroid(geom) FROM lahan WHERE id_lahan = %s LIMIT 1)
+                LIMIT 1
+            ),
+            route AS (
+                SELECT r.seq, r.node, r.edge, r.cost, j.nama_jalan, j.tipe_jalan, j.geom
+                FROM pgr_dijkstra(
+                    'SELECT id_jalan AS id, source::int, target::int, cost::float FROM jalan WHERE source IS NOT NULL AND target IS NOT NULL AND cost > 0',
+                    (SELECT id FROM start_node),
+                    (SELECT id FROM end_node),
+                    false
+                ) AS r
+                JOIN jalan j ON r.edge = j.id_jalan
+            )
             SELECT json_build_object(
                 'type', 'FeatureCollection',
                 'features', COALESCE(json_agg(
                     json_build_object(
                         'type', 'Feature',
-                        'geometry', ST_AsGeoJSON(ST_Transform(j.geom, 4326))::json,
+                        'geometry', ST_AsGeoJSON(ST_Transform(route.geom, 4326))::json,
                         'properties', json_build_object(
-                            'id_jalan', j.id_jalan,
-                            'nama_jalan', j.nama_jalan,
-                            'tipe_jalan', j.tipe_jalan
+                            'id_jalan', route.edge,
+                            'nama_jalan', route.nama_jalan,
+                            'tipe_jalan', route.tipe_jalan,
+                            'urutan', route.seq
                         )
                     )
                 ), '[]'::json)
             ) AS geojson
-            FROM jalan j
-            CROSS JOIN lahan l1
-            CROSS JOIN lahan l2
-            WHERE l1.id_lahan = %s AND l2.id_lahan = %s
-              AND ST_Intersects(
-                  j.geom, 
-                  ST_Buffer(
-                      ST_MakeLine(ST_Centroid(l1.geom), ST_Centroid(l2.geom)), 
-                      %s
-                  )
-              );
+            FROM route;
         """
-        cur.execute(query, (id_lahan_awal, id_lahan_tujuan, radius_buffer))
+        cur.execute(query, (id_lahan_awal, id_lahan_tujuan))
         result = cur.fetchone()
+        
+        # Validasi jika graf terputus (Dijkstra tidak menemukan jalan)
+        if not result or not result['geojson'] or not result['geojson']['features']:
+            return {"type": "FeatureCollection", "features": []}
+            
         return result['geojson']
     except Exception as e:
+        # Mencetak error asli ke terminal VS Code agar kita tahu apa masalah sebenarnya jika masih gagal
+        print(f"\n[ERROR PGROUTING]: {e}\n")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cur.close()

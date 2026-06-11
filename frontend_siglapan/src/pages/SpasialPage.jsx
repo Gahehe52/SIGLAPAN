@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import api from '../api/axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Radar, Route, ArrowRight, Settings, Navigation } from 'lucide-react';
+import { Radar, Route, ArrowRight, Navigation } from 'lucide-react';
 
 // Komponen otomatis untuk memfokuskan kamera peta ke rute jalan hasil analisis
 function FitRouteBounds({ dataRute }) {
@@ -28,25 +28,23 @@ function FitRouteBounds({ dataRute }) {
 
 export default function SpasialPage() {
   const [daftarLahan, setDaftarLahan] = useState([]);
-  const [dataLahanGeoJSON, setDataLahanGeoJSON] = useState(null); // Menyimpan format GeoJSON utuh untuk peta
+  const [dataLahanGeoJSON, setDataLahanGeoJSON] = useState(null);
   
   const [lahanAwal, setLahanAwal] = useState('');
   const [lahanTujuan, setLahanTujuan] = useState('');
-  const [radiusBuffer, setRadiusBuffer] = useState(500);
   
   const [dataRute, setDataRute] = useState(null);
   const [loadingLahan, setLoadingLahan] = useState(true);
   const [loadingAnalisis, setLoadingAnalisis] = useState(false);
-  const [pesanStatus, setPesanStatus] = useState('Silakan pilih lahan asal dan tujuan untuk memulai analisis spasial koridor rute.');
+  const [pesanStatus, setPesanStatus] = useState('Silakan pilih lahan asal dan tujuan untuk mencari rute terpendek.');
 
-  // Memuat daftar lahan untuk pilihan dropdown dan untuk ditampilkan di peta
   useEffect(() => {
     const fetchDaftarLahan = async () => {
       try {
         const res = await api.get('/lahan?limit=500');
         if (res.data && res.data.features) {
-          setDaftarLahan(res.data.features); // Digunakan untuk mengisi dropdown
-          setDataLahanGeoJSON(res.data); // Digunakan untuk menggambar poligon di peta
+          setDaftarLahan(res.data.features);
+          setDataLahanGeoJSON(res.data); 
         }
       } catch (error) {
         console.error("Gagal mengambil daftar lahan", error);
@@ -58,7 +56,6 @@ export default function SpasialPage() {
     fetchDaftarLahan();
   }, []);
 
-  // Mengeksekusi analisis spasial ST_Buffer & ST_Intersects ke backend Neon Cloud
   const handleAnalisisRute = async (e) => {
     e.preventDefault();
     if (!lahanAwal || !lahanTujuan) {
@@ -72,41 +69,37 @@ export default function SpasialPage() {
 
     setLoadingAnalisis(true);
     setDataRute(null);
-    setPesanStatus("Sedang menghitung fungsi centroid, garis hubungan, buffer ruang, dan interseksi jalan raya...");
+    setPesanStatus("Menganalisis topologi jaringan jalan dengan Algoritma Dijkstra...");
 
     try {
       const res = await api.get(`/spasial/rute-antar-lahan`, {
         params: {
           id_lahan_awal: lahanAwal,
-          id_lahan_tujuan: lahanTujuan,
-          radius_buffer: radiusBuffer
+          id_lahan_tujuan: lahanTujuan
         }
       });
 
       if (res.data && res.data.features && res.data.features.length > 0) {
         setDataRute(res.data);
-        setPesanStatus(`Analisis Spasial Sukses! Menemukan ${res.data.features.length} ruas segmen jalan raya di dalam koridor rute.`);
+        setPesanStatus(`Rute Terpendek Ditemukan! Menggunakan ${res.data.features.length} segmen jalan yang terhubung secara berurutan.`);
       } else {
         setDataRute(null);
-        setPesanStatus("Analisis selesai, tetapi tidak ditemukan ruas jalan raya utama di dalam radius koridor buffer yang ditentukan.");
+        setPesanStatus("Analisis selesai. Tidak ditemukan jalur jalan darat yang saling terhubung antara kedua lahan tersebut.");
       }
     } catch (error) {
       console.error("Gagal mengeksekusi analisis rute spasial", error);
-      setPesanStatus("Terjadi kesalahan internal server saat memproses fungsi topologi spasial.");
+      setPesanStatus("Terjadi kesalahan internal server saat memproses algoritma graf pgRouting.");
     } finally {
       setLoadingAnalisis(false);
     }
   };
 
-  // Gaya visual rute jaringan jalan terracotta kontras tinggi
-  const gayaRuteJalan = (feature) => {
-    const tipe = feature.properties?.tipe_jalan || 'Jalan Lokal';
-    const utama = ['motorway', 'trunk', 'primary', 'secondary'].includes(tipe);
+  // Gaya visual rute jaringan jalan terracotta menyala
+  const gayaRuteJalan = () => {
     return {
-      color: '#D35400', // Terracotta
-      weight: utama ? 5 : 3,
-      opacity: 0.9,
-      dashArray: utama ? null : '5, 5' // Jalan penghubung kecil dibuat putus-putus
+      color: '#D35400',
+      weight: 5,
+      opacity: 1
     };
   };
 
@@ -124,7 +117,7 @@ export default function SpasialPage() {
       layer.bindTooltip(`
         <div class="p-1 font-sans text-xs">
           <p class="font-bold text-[#40513B]">${feature.properties.nama_jalan || 'Jalan Tanpa Nama'}</p>
-          <p class="text-[10px] text-gray-500 capitalize bg-gray-100 px-1 py-0.5 rounded mt-0.5 inline-block">${feature.properties.tipe_jalan || 'Jalan Lokal'}</p>
+          <p class="text-[10px] text-gray-500 capitalize bg-gray-100 px-1 py-0.5 rounded mt-0.5 inline-block">Segmen ke-${feature.properties.urutan}</p>
         </div>
       `, { sticky: true });
     }
@@ -137,26 +130,9 @@ export default function SpasialPage() {
           <h3 class="font-bold text-[#40513B] border-b border-gray-200 pb-1 mb-1 text-sm">${feature.properties.nama_lahan || 'Lahan Pertanian'}</h3>
           <table class="w-full text-xs gap-x-2">
             <tr><td class="text-gray-500 py-0.5">Pemilik:</td><td class="font-semibold text-right pl-2">${feature.properties.nama_pemilik || '-'}</td></tr>
-            <tr><td class="text-gray-500 py-0.5">Tanaman:</td><td class="font-semibold text-right pl-2">${feature.properties.nama_tanaman || '-'}</td></tr>
-            <tr><td class="text-gray-500 py-0.5">Luas Lahan:</td><td class="font-bold text-[#628141] text-right pl-2">${feature.properties.luas_lahan ? parseFloat(feature.properties.luas_lahan).toLocaleString('id-ID') : 0} m²</td></tr>
           </table>
         </div>
       `, { sticky: true, direction: 'auto', opacity: 0.95 });
-
-      layer.on({
-        mouseover: (e) => {
-          const targetLayer = e.target;
-          targetLayer.setStyle({
-            fillOpacity: 0.8,
-            weight: 3,
-            color: '#2C3E50'
-          });
-        },
-        mouseout: (e) => {
-          const targetLayer = e.target;
-          targetLayer.setStyle(gayaPoligon());
-        }
-      });
     }
   };
 
@@ -168,7 +144,7 @@ export default function SpasialPage() {
         <div>
           <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-3">
             <Radar className="text-[#628141]" size={24} />
-            <h2 className="text-lg font-bold text-[#40513B]">Analisis Jaringan Rute</h2>
+            <h2 className="text-lg font-bold text-[#40513B]">Navigasi Rute Lahan</h2>
           </div>
 
           {loadingLahan ? (
@@ -216,25 +192,6 @@ export default function SpasialPage() {
                 </select>
               </div>
 
-              {/* Input Radius Buffer Koridor Jalan */}
-              <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100">
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1">
-                  <Settings size={14} className="text-gray-400" />
-                  Radius Koridor Analisis (Meter)
-                </label>
-                <input
-                  type="number"
-                  min="100"
-                  max="5000"
-                  value={radiusBuffer}
-                  onChange={(e) => setRadiusBuffer(parseInt(e.target.value) || 100)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#628141] bg-gray-50 font-mono text-gray-800"
-                />
-                <span className="text-[11px] text-gray-400 leading-normal">
-                  Menentukan jangkauan lebar ruang pencarian jalan raya utama di sekitar garis lurus antar-lahan.
-                </span>
-              </div>
-
               {/* Tombol Trigger Eksekusi */}
               <button
                 type="submit"
@@ -242,7 +199,7 @@ export default function SpasialPage() {
                 className="w-full bg-[#40513B] text-white py-3 rounded-lg font-semibold hover:bg-[#628141] transition-all disabled:bg-gray-400 shadow-sm flex items-center justify-center gap-2 mt-4"
               >
                 <Route size={18} />
-                {loadingAnalisis ? 'Memproses Analisis Spasial...' : 'Hitung Jaringan Rute'}
+                {loadingAnalisis ? 'Menghitung Rute Dijkstra...' : 'Cari Rute Terpendek'}
               </button>
             </form>
           )}
@@ -265,7 +222,7 @@ export default function SpasialPage() {
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000]">
             <div className="text-center flex flex-col items-center gap-2">
               <div className="w-10 h-10 border-4 border-[#628141] border-t-transparent rounded-full animate-spin"></div>
-              <span className="font-bold text-[#40513B] text-sm animate-pulse tracking-wide">Mengeksekusi Algoritma ST_Buffer PostGIS...</span>
+              <span className="font-bold text-[#40513B] text-sm animate-pulse tracking-wide">Mengeksekusi Algoritma pgRouting...</span>
             </div>
           </div>
         )}
@@ -280,7 +237,7 @@ export default function SpasialPage() {
             attribution='&copy; OpenStreetMap contributors'
           />
 
-          {/* Render Layer Poligon Lahan (Ditambahkan kembali) */}
+          {/* Render Layer Poligon Lahan */}
           {dataLahanGeoJSON && dataLahanGeoJSON.features && (
             <GeoJSON 
               key={`lahan-spasial-${dataLahanGeoJSON.features.length}`}
@@ -290,10 +247,10 @@ export default function SpasialPage() {
             />
           )}
 
-          {/* Menampilkan Garis Jaringan Jalan Hasil Interseksi Buffer */}
+          {/* Menampilkan Garis Rute Tunggal Dijkstra */}
           {dataRute && dataRute.features && (
             <GeoJSON
-              key={`rute-${dataRute.features.length}-${radiusBuffer}`}
+              key={`rute-${dataRute.features.length}-${lahanAwal}-${lahanTujuan}`}
               data={dataRute}
               style={gayaRuteJalan}
               onEachFeature={onEachRuteJalan}
