@@ -6,7 +6,6 @@ import MapPage from './pages/MapPage';
 import LahanPage from './pages/LahanPage';
 import TanamanPage from './pages/TanamanPage';
 import SpasialPage from './pages/SpasialPage';
-// Pastikan Anda mengubah nama komponen halaman manajemen dari FasilitasPage menjadi JalanPage jika file manajemen datanya disesuaikan
 import JalanPage from './pages/FasilitasPage'; 
 
 export default function App() {
@@ -19,7 +18,7 @@ export default function App() {
       case 'spasial': return <SpasialPage />;
       case 'lahan': return <LahanPage />;
       case 'tanaman': return <TanamanPage />;
-      case 'jalan': return <JalanPage />; // Menghubungkan ke halaman kelola jalan rute
+      case 'jalan': return <JalanPage />;
       default: return <DashboardPage />;
     }
   };
@@ -31,7 +30,7 @@ export default function App() {
       case 'spasial': return 'Analisis Spasial';
       case 'lahan': return 'Manajemen Data Lahan';
       case 'tanaman': return 'Manajemen Jenis Tanaman';
-      case 'jalan': return 'Manajemen Jaringan Jalan'; // Memperbarui judul halaman utama kelola jalan rute
+      case 'jalan': return 'Manajemen Jaringan Jalan';
       default: return 'SIGLAPAN';
     }
   };
@@ -45,8 +44,8 @@ export default function App() {
           {renderContent()}
         </div>
         <footer className="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-500 z-10">
-          <p className="font-medium">&copy; 2026 Sistem Informasi Lahan Pertanian</p>
-          <p className="text-xs mt-1">Muhammad Ghama Al Fajri (123140182) - Teknik Informatika ITERA</p>
+          <p className="font-medium">&copy; 2026 Sistem Informasi Lahan Pertanian Kota Tangerang</p>
+          <p className="text-xs mt-1">Kelompok Proyek WebGIS - Teknik Informatika ITERA</p>
         </footer>
       </main>
     </div>
