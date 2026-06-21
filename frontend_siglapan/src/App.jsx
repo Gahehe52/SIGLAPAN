@@ -6,9 +6,12 @@ import MapPage from './pages/MapPage';
 import LahanPage from './pages/LahanPage';
 import TanamanPage from './pages/TanamanPage';
 import SpasialPage from './pages/SpasialPage';
-import JalanPage from './pages/FasilitasPage'; 
+import JalanPage from './pages/FasilitasPage';
+import LoginPage from './pages/LoginPage';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [activePage, setActivePage] = useState('dashboard');
 
   const renderContent = () => {
@@ -16,8 +19,8 @@ export default function App() {
       case 'dashboard': return <DashboardPage />;
       case 'peta': return <MapPage />;
       case 'spasial': return <SpasialPage />;
-      case 'lahan': return <LahanPage />;
-      case 'tanaman': return <TanamanPage />;
+      case 'lahan': return <LahanPage isAuthenticated={isAuthenticated} />;
+      case 'tanaman': return <TanamanPage isAuthenticated={isAuthenticated} />;
       case 'jalan': return <JalanPage />;
       default: return <DashboardPage />;
     }
@@ -36,11 +39,16 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAF5]">
+    <div className="flex h-screen bg-[#F8FAF5] relative">
       <Sidebar activePage={activePage} setActivePage={setActivePage} />
       <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <Topbar title={getTitle()} />
-        <div className="flex-1 p-6 overflow-auto">
+        <Topbar 
+          title={getTitle()} 
+          isAuthenticated={isAuthenticated} 
+          onLoginClick={() => setShowLoginModal(true)} 
+          onLogoutClick={() => setIsAuthenticated(false)} 
+        />
+        <div className="flex-1 p-6 overflow-auto relative">
           {renderContent()}
         </div>
         <footer className="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-500 z-10">
@@ -48,6 +56,14 @@ export default function App() {
           <p className="text-xs mt-1">Kelompok Proyek WebGIS - Teknik Informatika ITERA</p>
         </footer>
       </main>
+
+      {/* Overlay Modal Login */}
+      {showLoginModal && (
+        <LoginPage 
+          onLogin={() => { setIsAuthenticated(true); setShowLoginModal(false); }} 
+          onClose={() => setShowLoginModal(false)} 
+        />
+      )}
     </div>
   );
 }

@@ -1,17 +1,34 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
+import { User, LogIn, LogOut } from 'lucide-react';
 
-export default function Topbar({ title }) {
+export default function Topbar({ title, isAuthenticated, onLoginClick, onLogoutClick }) {
   return (
-    <header className="bg-white p-6 shadow-sm border-b border-gray-200 flex justify-between items-center z-10">
-      <h2 className="text-2xl font-bold text-[#40513B]">{title}</h2>
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
+      <h2 className="text-xl font-bold text-[#40513B] tracking-wide">{title}</h2>
+      
       <div className="flex items-center gap-4">
-        <div className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
-          Server: <span className="text-[#628141] font-bold">Online</span>
+        <div className="hidden md:flex items-center gap-3 text-sm font-medium text-gray-600 bg-[#F8FAF5] px-4 py-2 rounded-full border border-gray-100">
+          <div className="bg-[#628141] p-1.5 rounded-full text-white">
+            <User size={14} />
+          </div>
+          {isAuthenticated ? 'Administrator Mode' : 'Guest Mode'}
         </div>
-        <button className="text-gray-400 hover:text-[#40513B] transition-colors">
-          <Settings size={24} />
-        </button>
+
+        {isAuthenticated ? (
+          <button 
+            onClick={onLogoutClick}
+            className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-4 py-2 rounded-lg font-bold transition-colors border border-red-100"
+          >
+            <LogOut size={18} /> Logout
+          </button>
+        ) : (
+          <button 
+            onClick={onLoginClick}
+            className="flex items-center gap-2 bg-[#628141] text-white hover:bg-[#40513B] px-4 py-2 rounded-lg font-bold transition-colors shadow-sm"
+          >
+            <LogIn size={18} /> Login Akses
+          </button>
+        )}
       </div>
     </header>
   );
